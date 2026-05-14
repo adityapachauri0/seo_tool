@@ -115,11 +115,45 @@ function ProjectDetail() {
   const handleRunAudit = async () => {
     try {
       setRunning(true);
-      await api.post(`/audits/run/${id}`);
-      await fetchData();
+      setError(null);
+      const res = await api.post(`/audits/run/${id}`);
+      const jobId = res.data?.job?.jobId;
+
+      if (!jobId) {
+        await fetchData();
+        setRunning(false);
+        return;
+      }
+
+      // Poll crawler for job status every 3 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await api.get(`/audits/run/${id}/status`).catch(() => null);
+          // Fallback: check if new audits appeared
+          const auditRes = await api.get(`/audits/${id}?limit=1`);
+          const latestAudit = auditRes.data?.audits?.[0];
+          const latestTime = latestAudit ? new Date(latestAudit.crawledAt).getTime() : 0;
+          const now = Date.now();
+
+          // If audit data arrived in the last 2 minutes, crawl is done
+          if (latestTime > now - 120000) {
+            clearInterval(pollInterval);
+            await fetchData();
+            setRunning(false);
+          }
+        } catch (e) {
+          // keep polling
+        }
+      }, 5000);
+
+      // Safety timeout: stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        fetchData();
+        setRunning(false);
+      }, 300000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to start audit');
-    } finally {
       setRunning(false);
     }
   };
