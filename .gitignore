@@ -1,0 +1,14 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+*.log
+dist/
+logs/
+.DS_Store
+.swarm/
+ruvector.db
+agentdb.rvf
+agentdb.rvf.lock
+*.db-shm
+*.db-wal

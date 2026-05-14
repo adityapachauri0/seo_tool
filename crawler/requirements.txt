@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+crawl4ai==0.6.2
+beautifulsoup4
+pydantic
+python-dotenv
+httpx
