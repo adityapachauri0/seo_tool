@@ -71,4 +71,4 @@ async function syncAllRanks(projects) {
   return results;
 }
 
-module.exports = { syncAllRanks, syncProjectRanks };
+module.exports = { syncAllRanks, syncProjectRanks, matchProperty };

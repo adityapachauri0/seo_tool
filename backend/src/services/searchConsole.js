@@ -36,6 +36,7 @@ async function fetchSearchAnalytics(siteUrl, options = {}) {
     endDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     dimensions = ['query', 'page'],
     rowLimit = 1000,
+    startRow = 0,
   } = options;
 
   try {
@@ -46,6 +47,7 @@ async function fetchSearchAnalytics(siteUrl, options = {}) {
         endDate,
         dimensions,
         rowLimit,
+        startRow,
         dataState: 'final',
       },
     });
