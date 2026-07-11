@@ -1,4 +1,5 @@
 const Audit = require('../models/Audit');
+const { sendMail } = require('./mailer');
 const AuditSummary = require('../models/AuditSummary');
 const Report = require('../models/Report');
 const Alert = require('../models/Alert');
@@ -127,6 +128,14 @@ async function checkAlerts(projectId) {
     message: `Crawled ${current.totalPages} pages. Average score: ${current.avgScore}.`,
     data: { totalPages: current.totalPages, avgScore: current.avgScore },
   }));
+
+  // Email anything worth acting on (info-level stays in-app only)
+  const urgent = alerts.filter(a => a.severity !== 'info');
+  if (urgent.length > 0) {
+    const project = await Project.findById(projectId);
+    const body = urgent.map(a => `[${a.severity.toUpperCase()}] ${a.title}\n${a.message}`).join('\n\n');
+    sendMail(`SEO Alert — ${project?.domain || projectId}: ${urgent[0].title}`, body);
+  }
 
   return alerts;
 }

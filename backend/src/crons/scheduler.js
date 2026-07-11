@@ -71,25 +71,47 @@ function startScheduler() {
     }
   });
 
-  // Weekly report generation — every Monday at 4 AM
+  // Weekly report generation — every Monday at 4 AM, emailed as one digest
   cron.schedule('0 4 * * 1', async () => {
     console.log('[CRON] Generating weekly reports...');
     try {
-      const { generateReport } = require('../services/reportGenerator');
+      const { generateReport, formatReportText } = require('../services/reportGenerator');
+      const { sendMail } = require('../services/mailer');
       const projects = await Project.find({ status: 'active' });
-      await Promise.allSettled(
-        projects.map(project =>
-          generateReport(project._id, 'weekly')
-            .then(() => console.log(`[CRON] Report generated for ${project.domain}`))
-            .catch(err => console.log(`[CRON] Report failed for ${project.domain}:`, err.message))
-        )
-      );
+      const sections = [];
+      for (const project of projects) {
+        try {
+          const report = await generateReport(project._id, 'weekly');
+          if (report) sections.push(formatReportText(report, project.name));
+          console.log(`[CRON] Report generated for ${project.domain}`);
+        } catch (err) {
+          console.log(`[CRON] Report failed for ${project.domain}:`, err.message);
+        }
+      }
+      if (sections.length > 0) {
+        await sendMail(
+          `Weekly SEO Report — ${sections.length} site(s)`,
+          sections.join('\n\n' + '='.repeat(60) + '\n\n')
+        );
+      }
     } catch (err) {
       console.error('[CRON] Weekly report generation failed:', err.message);
     }
   });
 
-  console.log('[CRON] Scheduler started — daily at 2:00 AM, weekly on Monday at 3:00 AM, reports on Monday at 4:00 AM');
+  // Daily GSC rank sync — every day at 5 AM (GSC data lags ~2 days)
+  cron.schedule('0 5 * * *', async () => {
+    console.log('[CRON] Syncing GSC rank history...');
+    try {
+      const { syncAllRanks } = require('../services/rankTracker');
+      const projects = await Project.find({ status: 'active' });
+      await syncAllRanks(projects);
+    } catch (err) {
+      console.error('[CRON] Rank sync failed:', err.message);
+    }
+  });
+
+  console.log('[CRON] Scheduler started — crawls daily 2 AM / Mon 3 AM, reports Mon 4 AM, rank sync daily 5 AM');
 }
 
 module.exports = { startScheduler };

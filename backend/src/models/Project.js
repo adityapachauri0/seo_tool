@@ -30,7 +30,7 @@ const projectSchema = new mongoose.Schema(
     crawlFrequency: {
       type: String,
       enum: ['daily', 'weekly', 'manual'],
-      default: 'manual',
+      default: 'weekly',
     },
     lastCrawlAt: {
       type: Date,
