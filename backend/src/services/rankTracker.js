@@ -24,24 +24,27 @@ function matchProperty(sites, domain) {
   })?.siteUrl || null;
 }
 
-// Sync one project's query positions for a single day (GSC data lags ~2 days)
+// Sync one project's query positions over a rolling window (GSC data lags
+// ~2 days and may not be final yet at sync time — re-syncing the last few
+// days daily is idempotent thanks to upserts, and closes any gaps)
 async function syncProjectRanks(project, sites) {
   const property = matchProperty(sites, project.domain);
   if (!property) return { project: project.domain, error: 'no GSC property access' };
 
-  const day = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const fmt = d => d.toISOString().split('T')[0];
+  const startDate = fmt(new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
+  const endDate = fmt(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
   const { rows, error } = await fetchSearchAnalytics(property, {
-    startDate: day,
-    endDate: day,
-    dimensions: ['query'],
-    rowLimit: 500,
+    startDate,
+    endDate,
+    dimensions: ['query', 'date'],
+    rowLimit: 5000,
   });
   if (error) return { project: project.domain, error };
 
-  const date = new Date(day);
   for (const row of rows) {
     await RankHistory.updateOne(
-      { projectId: project._id, keyword: row.keys[0], date },
+      { projectId: project._id, keyword: row.keys[0], date: new Date(row.keys[1]) },
       {
         $set: {
           position: Math.round(row.position * 10) / 10,
@@ -53,7 +56,7 @@ async function syncProjectRanks(project, sites) {
       { upsert: true }
     );
   }
-  return { project: project.domain, property, date: day, queries: rows.length };
+  return { project: project.domain, property, window: `${startDate}..${endDate}`, queries: rows.length };
 }
 
 // Sync all active projects; returns per-project results
