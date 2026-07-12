@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Target, MousePointerClick, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Target, MousePointerClick, Sparkles, RefreshCw, Link2, ExternalLink, Check, X } from 'lucide-react';
 import api from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
@@ -14,16 +14,20 @@ export default function Opportunities() {
   const [days, setDays] = useState(90);
   const [busyKeyword, setBusyKeyword] = useState(null);
   const [ctrResults, setCtrResults] = useState({}); // keyword -> fix result
+  const [linkOpps, setLinkOpps] = useState([]);
+  const [sweeping, setSweeping] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [projectRes, oppsRes] = await Promise.all([
+      const [projectRes, oppsRes, linkRes] = await Promise.all([
         api.get(`/projects/${id}`),
         api.get(`/opportunities/${id}?days=${days}`),
+        api.get(`/link-opportunities/${id}`),
       ]);
       setProjectName(projectRes.data.name);
       setOpps(oppsRes.data);
+      setLinkOpps(linkRes.data);
     } catch (err) {
       console.error('Failed to load opportunities:', err);
     } finally {
@@ -54,6 +58,30 @@ export default function Opportunities() {
       alert(err.response?.data?.error || 'Rewrite failed');
     } finally {
       setBusyKeyword(null);
+    }
+  };
+
+  const handleSweep = async () => {
+    setSweeping(true);
+    try {
+      await api.post(`/link-opportunities/${id}/sweep`);
+      const res = await api.get(`/link-opportunities/${id}`);
+      setLinkOpps(res.data);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Sweep failed');
+    } finally {
+      setSweeping(false);
+    }
+  };
+
+  const setLinkStatus = async (oppId, status) => {
+    try {
+      await api.put(`/link-opportunities/item/${oppId}`, { status });
+      setLinkOpps((prev) => prev
+        .map((o) => (o._id === oppId ? { ...o, status } : o))
+        .filter((o) => o.status !== 'ignored'));
+    } catch (err) {
+      alert('Update failed');
     }
   };
 
@@ -126,6 +154,71 @@ export default function Opportunities() {
                       >
                         <Sparkles size={14} className={busyKeyword === o.keyword ? 'spin' : ''} />
                         {busyKeyword === o.keyword ? 'Generating...' : 'Generate Brief'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Link opportunities (off-page) */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <Link2 size={18} /> Link Opportunities
+            </h2>
+            <p className="text-muted" style={{ marginBottom: 12 }}>
+              Unlinked brand mentions to reclaim, and journalists actively covering your topics &mdash; swept weekly.
+            </p>
+          </div>
+          <button className="btn btn-secondary" onClick={handleSweep} disabled={sweeping}>
+            <RefreshCw size={16} className={sweeping ? 'spin' : ''} />
+            {sweeping ? 'Sweeping...' : 'Sweep Now'}
+          </button>
+        </div>
+        {linkOpps.length === 0 ? (
+          <EmptyState title="No link opportunities yet" message="Run a sweep, or wait for the Monday morning sweep to populate this list." />
+        ) : (
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Page</th>
+                  <th>Found via</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {linkOpps.map((o) => (
+                  <tr key={o._id}>
+                    <td>
+                      <span className="kw-intent-badge" style={o.type === 'unlinked_mention'
+                        ? { background: '#dcfce7', color: '#15803d' }
+                        : { background: '#dbeafe', color: '#1d4ed8' }}>
+                        {o.type === 'unlinked_mention' ? 'Unlinked mention' : 'Journalist activity'}
+                      </span>
+                    </td>
+                    <td>
+                      <a href={o.url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {(o.title || o.url).slice(0, 70)} <ExternalLink size={12} />
+                      </a>
+                    </td>
+                    <td className="text-muted">{o.query}</td>
+                    <td>{o.status}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {o.status === 'new' && (
+                        <button className="btn btn-secondary btn-sm" onClick={() => setLinkStatus(o._id, 'contacted')}>
+                          <Check size={14} /> Contacted
+                        </button>
+                      )}{' '}
+                      <button className="btn btn-ghost btn-sm" onClick={() => setLinkStatus(o._id, 'ignored')}>
+                        <X size={14} /> Ignore
                       </button>
                     </td>
                   </tr>

@@ -92,6 +92,13 @@ function startScheduler() {
             } catch (err) {
               console.log(`[CRON] Opportunities failed for ${project.domain}:`, err.message);
             }
+            try {
+              const { formatLinkOppsText } = require('../services/linkOpportunities');
+              const linkText = await formatLinkOppsText(project._id, project.name);
+              if (linkText) section += '\n' + linkText;
+            } catch (err) {
+              console.log(`[CRON] Link opps digest failed for ${project.domain}:`, err.message);
+            }
             sections.push(section);
           }
           console.log(`[CRON] Report generated for ${project.domain}`);
@@ -107,6 +114,24 @@ function startScheduler() {
       }
     } catch (err) {
       console.error('[CRON] Weekly report generation failed:', err.message);
+    }
+  });
+
+  // Weekly off-page sweep — Monday 3:30 AM, before reports go out at 4 AM
+  cron.schedule('30 3 * * 1', async () => {
+    console.log('[CRON] Running off-page link sweep...');
+    try {
+      const { sweepProject } = require('../services/linkOpportunities');
+      const projects = await Project.find({ status: 'active' });
+      for (const project of projects) {
+        try {
+          await sweepProject(project);
+        } catch (err) {
+          console.log(`[CRON] Link sweep failed for ${project.domain}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('[CRON] Link sweep job failed:', err.message);
     }
   });
 

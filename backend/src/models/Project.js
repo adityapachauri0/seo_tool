@@ -27,6 +27,11 @@ const projectSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Topics used for off-page sweeps (press coverage / journalist activity)
+    topics: {
+      type: [String],
+      default: [],
+    },
     crawlFrequency: {
       type: String,
       enum: ['daily', 'weekly', 'manual'],

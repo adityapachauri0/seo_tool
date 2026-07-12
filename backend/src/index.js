@@ -12,6 +12,7 @@ const contentRoutes = require('./routes/content');
 const technicalRoutes = require('./routes/technical');
 const reportsRoutes = require('./routes/reports');
 const opportunitiesRoutes = require('./routes/opportunities');
+const linkOpportunitiesRoutes = require('./routes/linkOpportunities');
 const { startScheduler } = require('./crons/scheduler');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/technical', technicalRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/opportunities', opportunitiesRoutes);
+app.use('/api/link-opportunities', linkOpportunitiesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
