@@ -11,6 +11,7 @@ const keywordRoutes = require('./routes/keywords');
 const contentRoutes = require('./routes/content');
 const technicalRoutes = require('./routes/technical');
 const reportsRoutes = require('./routes/reports');
+const opportunitiesRoutes = require('./routes/opportunities');
 const { startScheduler } = require('./crons/scheduler');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/keywords', keywordRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/technical', technicalRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/opportunities', opportunitiesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

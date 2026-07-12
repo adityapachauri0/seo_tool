@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, RefreshCw, Settings, AlertTriangle, Activity,
-  Globe, FileText, Search, Key, Shield, BarChart3
+  Globe, FileText, Search, Key, Shield, BarChart3, Target
 } from 'lucide-react';
 import api from '../api/client';
 import ScoreCircle from '../components/ScoreCircle';
@@ -209,6 +209,13 @@ function ProjectDetail() {
             >
               <Key size={16} />
               Keywords
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => navigate(`/project/${id}/opportunities`)}
+            >
+              <Target size={16} />
+              Opportunities
             </button>
             <button
               className="btn btn-secondary"

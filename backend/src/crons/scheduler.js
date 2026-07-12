@@ -76,13 +76,24 @@ function startScheduler() {
     console.log('[CRON] Generating weekly reports...');
     try {
       const { generateReport, formatReportText } = require('../services/reportGenerator');
+      const { getOpportunities, formatOpportunitiesText } = require('../services/opportunities');
       const { sendMail } = require('../services/mailer');
       const projects = await Project.find({ status: 'active' });
       const sections = [];
       for (const project of projects) {
         try {
           const report = await generateReport(project._id, 'weekly');
-          if (report) sections.push(formatReportText(report, project.name));
+          if (report) {
+            let section = formatReportText(report, project.name);
+            try {
+              const opps = await getOpportunities(project._id);
+              const oppsText = formatOpportunitiesText(opps, project.name);
+              if (oppsText) section += '\n' + oppsText;
+            } catch (err) {
+              console.log(`[CRON] Opportunities failed for ${project.domain}:`, err.message);
+            }
+            sections.push(section);
+          }
           console.log(`[CRON] Report generated for ${project.domain}`);
         } catch (err) {
           console.log(`[CRON] Report failed for ${project.domain}:`, err.message);

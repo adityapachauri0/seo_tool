@@ -11,6 +11,7 @@ import TechnicalSeo from './pages/TechnicalSeo';
 import ContentEngine from './pages/ContentEngine';
 import ContentBriefDetail from './pages/ContentBriefDetail';
 import Reports from './pages/Reports';
+import Opportunities from './pages/Opportunities';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/project/:id/content" element={<ContentEngine />} />
           <Route path="/project/:id/content/brief/:briefId" element={<ContentBriefDetail />} />
           <Route path="/project/:id/reports" element={<Reports />} />
+          <Route path="/project/:id/opportunities" element={<Opportunities />} />
           <Route path="/audit/:auditId" element={<AuditDetail />} />
         </Routes>
       </main>

@@ -37,20 +37,21 @@ async function fetchSearchAnalytics(siteUrl, options = {}) {
     dimensions = ['query', 'page'],
     rowLimit = 1000,
     startRow = 0,
+    filters = null, // e.g. [{ dimension: 'query', operator: 'equals', expression: 'foo' }]
   } = options;
 
   try {
-    const res = await client.searchanalytics.query({
-      siteUrl,
-      requestBody: {
-        startDate,
-        endDate,
-        dimensions,
-        rowLimit,
-        startRow,
-        dataState: 'final',
-      },
-    });
+    const requestBody = {
+      startDate,
+      endDate,
+      dimensions,
+      rowLimit,
+      startRow,
+      dataState: 'final',
+    };
+    if (filters) requestBody.dimensionFilterGroups = [{ filters }];
+
+    const res = await client.searchanalytics.query({ siteUrl, requestBody });
 
     return { rows: res.data.rows || [] };
   } catch (err) {
