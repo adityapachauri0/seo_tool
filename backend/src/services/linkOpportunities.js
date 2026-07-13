@@ -71,9 +71,11 @@ async function sweepProject(project) {
   const brand = brandOf(project);
   let found = { mentions: 0, press: 0, errors: [] };
 
-  // 1. Unlinked brand mentions
+  // 1. Unlinked brand mentions — the bare domain token is unambiguous where a
+  // brand name like "PCP Claim Today" is also a generic phrase
+  const bareToken = domain.replace(/^www\./, '').split('.')[0];
   const { results: mentionResults, error: mErr } = await firecrawlSearch(
-    `"${brand}" -site:${domain}`, 10
+    `("${brand}" OR "${bareToken}") -site:${domain}`, 10
   );
   if (mErr) found.errors.push(`mentions: ${mErr}`);
   for (const r of mentionResults) {
